@@ -1,0 +1,62 @@
+<idea-plugin>
+  <id>com.looshch.gouse.idea</id>
+  <name>gouse</name>
+  <vendor url="https://plugins.jetbrains.com/organization/looshch">looshch</vendor>
+  <description><![CDATA[gouse toggles declared and not used errors in Go.
+    <p>Toggle ‘declared and not used’ errors in Go by using idiomatic <code>_ = notUsedVar</code> and leaving a TODO comment.</p>
+    <p><img src="https://raw.githubusercontent.com/looshch/gouse/master/demo.gif" alt="gouse demo"/></p>
+
+    <h3>Quick Action</h3>
+    <p><img src="https://raw.githubusercontent.com/vipkek/gouse-idea/refs/heads/master/src/main/resources/quick-action-demo.png" alt="quick action demo"/></p>
+
+    <h3>One-Click Install</h3>
+    <p><img src="https://raw.githubusercontent.com/vipkek/gouse-idea/refs/heads/master/src/main/resources/one-click-install-demo.png" alt="one-click install demo"/></p>
+
+    <h3>Context Menu</h3>
+    <p><img src="https://raw.githubusercontent.com/vipkek/gouse-idea/refs/heads/master/src/main/resources/context-menu-demo.png" alt="context menu demo"/></p>
+
+    <h3>Find Action</h3>
+    <p><img src="https://raw.githubusercontent.com/vipkek/gouse-idea/refs/heads/master/src/main/resources/find-actions-demo.png" alt="find action demo"/></p>
+
+    <h3>Dependencies</h3>
+    <p><a href="https://github.com/looshch/gouse">gouse</a> is required.</p>
+    <pre><code>go install github.com/looshch/gouse/v2@latest</code></pre>
+
+    <h3>Usage</h3>
+    <p><code>gouse: Toggle ‘declared and not used’ errors</code> toggles the errors in a file.</p>
+    <p>The plugin also adds a light-bulb quick action that runs <code>gouse</code> for the current file.</p>
+    <p>You can run the same action from the editor right-click context menu or from Find Action.</p>
+    <p>If <code>gouse</code> is missing, the plugin can offer a one-click install. That still requires the Go toolchain to be available on your <code>PATH</code>.</p>
+    <p>If <code>gouse</code> is installed somewhere non-standard, set the executable path in <code>Settings | Tools | gouse</code>.</p>
+    <p>By default, if <code>gouse.path</code> is empty and <code>gouse</code> is already installed, the plugin tries to update <code>gouse</code> to the latest version in the background on startup. You can disable this with the startup auto-update checkbox in settings.</p>
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>org.jetbrains.plugins.go</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <applicationService serviceImplementation="com.looshch.gouse.idea.services.GouseSettingsService"/>
+    <applicationService serviceImplementation="com.looshch.gouse.idea.services.GouseCommandService"/>
+    <postStartupActivity implementation="com.looshch.gouse.idea.startup.GouseStartupActivity"/>
+    <applicationConfigurable
+        id="com.looshch.gouse.idea.settings"
+        groupId="tools"
+        displayName="gouse"
+        instance="com.looshch.gouse.idea.settings.GouseConfigurable"/>
+    <notificationGroup id="gouse" displayType="BALLOON" isLogByDefault="true"/>
+    <intentionAction>
+      <className>com.looshch.gouse.idea.intentions.ApplyGouseIntention</className>
+      <category>Gouse</category>
+    </intentionAction>
+  </extensions>
+
+  <actions>
+    <action
+        id="com.looshch.gouse.idea.ToggleGouseAction"
+        class="com.looshch.gouse.idea.actions.ToggleGouseAction"
+        text="gouse: Toggle ‘declared and not used’ errors"
+        description="Run gouse for the current Go file">
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+    </action>
+  </actions>
+</idea-plugin>
