@@ -134,7 +134,10 @@ class GouseCommandService(
                 if (configuredPath.isNotEmpty()) {
                     RunResult.ConfiguredPathMissing(configuredPath)
                 } else {
-                    RunResult.GouseMissing
+                    runWithDiscoveredExecutable(
+                        failedExecutablePath = executablePath,
+                        targetPath = targetPath,
+                    )
                 }
             } else {
                 RunResult.ExecutionFailed(error.message)
@@ -146,6 +149,46 @@ class GouseCommandService(
         }
 
         return RunResult.Success
+    }
+
+    private fun runWithDiscoveredExecutable(
+        failedExecutablePath: String,
+        targetPath: String,
+    ): RunResult {
+        val discoveredPath = discoverInstalledExecutablePath()
+            ?.takeIf { it != failedExecutablePath }
+            ?: return RunResult.GouseMissing
+
+        val commandResult = try {
+            commandRunner.run(listOf(discoveredPath, "-w", targetPath))
+        } catch (error: CommandExecutionException) {
+            return if (error.kind == CommandExecutionException.FailureKind.MISSING_COMMAND) {
+                RunResult.GouseMissing
+            } else {
+                RunResult.ExecutionFailed(error.message)
+            }
+        }
+
+        if (commandResult.exitCode != 0) {
+            return RunResult.ExecutionFailed(errorMessageFor(commandResult))
+        }
+
+        binaryResolver.rememberInstalledExecutablePath(discoveredPath)
+        return RunResult.Success
+    }
+
+    private fun discoverInstalledExecutablePath(): String? {
+        val goEnvOutput = try {
+            commandRunner.run(listOf("go", "env", "GOBIN", "GOPATH"))
+        } catch (_: CommandExecutionException) {
+            return null
+        }
+
+        if (goEnvOutput.exitCode != 0) {
+            return null
+        }
+
+        return binaryResolver.parseInstalledExecutablePath(goEnvOutput.stdout)
     }
 
     private fun refresh(virtualFile: VirtualFile): RunResult {

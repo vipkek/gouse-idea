@@ -20,12 +20,8 @@ class GouseConfigurable : SearchableConfigurable {
 
     override fun createComponent(): JComponent {
         val field = TextFieldWithBrowseButton()
-        field.addBrowseFolderListener(
-            GouseBundle.message("configurable.path.dialog.title"),
-            null,
-            null,
-            FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor(),
-        )
+        val descriptor = FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor()
+        field.addBrowseFolderListener(null, descriptor)
         field.text = GouseSettingsService.getInstance().getConfiguredExecutablePath()
         executablePathField = field
 

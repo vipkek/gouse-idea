@@ -31,11 +31,20 @@ class GouseCommandServiceTest {
     fun `maps missing binary without configured path to gouse missing`() {
         val settings = GouseSettingsService()
         val resolver = GouseBinaryResolver(settings)
-        val runner = CommandRunner { _ ->
-            throw CommandExecutionException(
-                message = "missing",
-                kind = CommandExecutionException.FailureKind.MISSING_COMMAND,
-            )
+        val initialExecutablePath = resolver.resolveExecutablePath()
+        val commands = mutableListOf<List<String>>()
+        val runner = CommandRunner { command ->
+            commands += command
+            when (command) {
+                listOf(initialExecutablePath, "-w", "/tmp/example.go") ->
+                    throw CommandExecutionException(
+                        message = "missing",
+                        kind = CommandExecutionException.FailureKind.MISSING_COMMAND,
+                    )
+                listOf("go", "env", "GOBIN", "GOPATH") ->
+                    CommandResult(exitCode = 0, stdout = "\n", stderr = "")
+                else -> error("Unexpected command: $command")
+            }
         }
 
         val service = serviceWith(settings, runner, resolver)
@@ -43,6 +52,130 @@ class GouseCommandServiceTest {
         val result = service.runGouse(resolver.resolveExecutablePath(), "/tmp/example.go")
 
         assertEquals(RunResult.GouseMissing, result)
+        assertEquals(
+            listOf(
+                listOf(initialExecutablePath, "-w", "/tmp/example.go"),
+                listOf("go", "env", "GOBIN", "GOPATH"),
+            ),
+            commands,
+        )
+    }
+
+    @Test
+    fun `uses discovered installed path when default executable is missing`() {
+        val settings = GouseSettingsService()
+        val resolver = GouseBinaryResolver(settings)
+        val initialExecutablePath = resolver.resolveExecutablePath()
+        val commands = mutableListOf<List<String>>()
+        val discoveredPath = "/custom/bin/${resolver.binaryName("gouse")}"
+        val runner = CommandRunner { command ->
+            commands += command
+            when (command) {
+                listOf(initialExecutablePath, "-w", "/tmp/example.go") ->
+                    throw CommandExecutionException(
+                        message = "missing",
+                        kind = CommandExecutionException.FailureKind.MISSING_COMMAND,
+                    )
+                listOf("go", "env", "GOBIN", "GOPATH") ->
+                    CommandResult(exitCode = 0, stdout = "/custom/bin\n/custom/go\n", stderr = "")
+                listOf(discoveredPath, "-w", "/tmp/example.go") ->
+                    CommandResult(exitCode = 0, stdout = "", stderr = "")
+                else -> error("Unexpected command: $command")
+            }
+        }
+
+        val service = serviceWith(settings, runner, resolver)
+
+        val result = service.runGouse(resolver.resolveExecutablePath(), "/tmp/example.go")
+
+        assertEquals(RunResult.Success, result)
+        assertEquals(discoveredPath, resolver.resolveExecutablePath())
+        assertEquals(
+            listOf(
+                listOf(initialExecutablePath, "-w", "/tmp/example.go"),
+                listOf("go", "env", "GOBIN", "GOPATH"),
+                listOf(discoveredPath, "-w", "/tmp/example.go"),
+            ),
+            commands,
+        )
+    }
+
+    @Test
+    fun `returns gouse missing when discovery fails`() {
+        val settings = GouseSettingsService()
+        val resolver = GouseBinaryResolver(settings)
+        val initialExecutablePath = resolver.resolveExecutablePath()
+        val commands = mutableListOf<List<String>>()
+        val runner = CommandRunner { command ->
+            commands += command
+            when (command) {
+                listOf(initialExecutablePath, "-w", "/tmp/example.go") ->
+                    throw CommandExecutionException(
+                        message = "missing",
+                        kind = CommandExecutionException.FailureKind.MISSING_COMMAND,
+                    )
+                listOf("go", "env", "GOBIN", "GOPATH") ->
+                    throw CommandExecutionException(
+                        message = "go missing",
+                        kind = CommandExecutionException.FailureKind.MISSING_COMMAND,
+                    )
+                else -> error("Unexpected command: $command")
+            }
+        }
+
+        val service = serviceWith(settings, runner, resolver)
+
+        val result = service.runGouse(resolver.resolveExecutablePath(), "/tmp/example.go")
+
+        assertEquals(RunResult.GouseMissing, result)
+        assertEquals(
+            listOf(
+                listOf(initialExecutablePath, "-w", "/tmp/example.go"),
+                listOf("go", "env", "GOBIN", "GOPATH"),
+            ),
+            commands,
+        )
+    }
+
+    @Test
+    fun `returns execution failed when discovered path retry fails`() {
+        val settings = GouseSettingsService()
+        val resolver = GouseBinaryResolver(settings)
+        val initialExecutablePath = resolver.resolveExecutablePath()
+        val commands = mutableListOf<List<String>>()
+        val discoveredPath = "/custom/bin/${resolver.binaryName("gouse")}"
+        val runner = CommandRunner { command ->
+            commands += command
+            when (command) {
+                listOf(initialExecutablePath, "-w", "/tmp/example.go") ->
+                    throw CommandExecutionException(
+                        message = "missing",
+                        kind = CommandExecutionException.FailureKind.MISSING_COMMAND,
+                    )
+                listOf("go", "env", "GOBIN", "GOPATH") ->
+                    CommandResult(exitCode = 0, stdout = "/custom/bin\n/custom/go\n", stderr = "")
+                listOf(discoveredPath, "-w", "/tmp/example.go") ->
+                    throw CommandExecutionException(
+                        message = "permission denied",
+                        kind = CommandExecutionException.FailureKind.EXECUTION_ERROR,
+                    )
+                else -> error("Unexpected command: $command")
+            }
+        }
+
+        val service = serviceWith(settings, runner, resolver)
+
+        val result = service.runGouse(resolver.resolveExecutablePath(), "/tmp/example.go")
+
+        assertEquals(RunResult.ExecutionFailed("permission denied"), result)
+        assertEquals(
+            listOf(
+                listOf(initialExecutablePath, "-w", "/tmp/example.go"),
+                listOf("go", "env", "GOBIN", "GOPATH"),
+                listOf(discoveredPath, "-w", "/tmp/example.go"),
+            ),
+            commands,
+        )
     }
 
     @Test

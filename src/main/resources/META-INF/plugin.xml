@@ -2,9 +2,10 @@
   <id>com.looshch.gouse.idea</id>
   <name>gouse</name>
   <vendor url="https://plugins.jetbrains.com/organization/looshch">looshch</vendor>
-  <description><![CDATA[gouse toggles declared and not used errors in Go.
+  <description><![CDATA[gouse toggles 'declared and not used errors' in Go.
+
     <p>Toggle ‘declared and not used’ errors in Go by using idiomatic <code>_ = notUsedVar</code> and leaving a TODO comment.</p>
-    <p><img src="https://raw.githubusercontent.com/looshch/gouse/master/demo.gif" alt="gouse demo"/></p>
+    <p><img width="800" src="https://raw.githubusercontent.com/looshch/gouse/master/demo.gif" alt="gouse demo"/></p>
 
     <h3>Quick Action</h3>
     <p><img src="https://raw.githubusercontent.com/vipkek/gouse-idea/refs/heads/master/src/main/resources/quick-action-demo.png" alt="quick action demo"/></p>
@@ -47,6 +48,7 @@
     <intentionAction>
       <className>com.looshch.gouse.idea.intentions.ApplyGouseIntention</className>
       <category>Gouse</category>
+      <descriptionDirectoryName>ApplyGouseIntention</descriptionDirectoryName>
     </intentionAction>
   </extensions>
 
