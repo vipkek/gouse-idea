@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+
 plugins {
     kotlin("jvm") version "2.2.20"
     id("org.jetbrains.intellij.platform") version "2.12.0"
@@ -40,7 +42,10 @@ intellijPlatform {
     }
     pluginVerification {
         ides {
-            recommended()
+            create(IntelliJPlatformType.GoLand, "2025.2.6.1")
+            create(IntelliJPlatformType.IntellijIdeaUltimate, "2025.2.6.2")
+            create(IntelliJPlatformType.GoLand, "2026.1.1")
+            create(IntelliJPlatformType.IntellijIdea, "2026.1.1")
         }
     }
     publishing {
