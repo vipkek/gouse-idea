@@ -1,6 +1,5 @@
 package com.looshch.gouse.idea.intentions
 
-import com.goide.psi.GoFile
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.DumbAware
@@ -16,17 +15,12 @@ class ApplyGouseIntention : PsiElementBaseIntentionAction(), DumbAware {
     override fun getFamilyName(): String = GouseBundle.message("intention.family")
 
     override fun isAvailable(project: Project, editor: Editor?, element: PsiElement): Boolean {
-        val psiFile = element.containingFile
-        if (psiFile !is GoFile) {
-            return false
-        }
-
-        val file = editor?.virtualFile ?: element.containingFile?.virtualFile
-        if (!GouseTarget.isValid(file)) {
-            return false
-        }
-
         if (editor == null) {
+            return false
+        }
+
+        val file = editor.virtualFile ?: element.containingFile?.virtualFile
+        if (!GouseTarget.isValid(file)) {
             return false
         }
 

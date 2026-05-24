@@ -1,17 +1,28 @@
 package com.looshch.gouse.idea
 
 import java.util.Properties
+import kotlin.text.Charsets.ISO_8859_1
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 
 class PluginMetadataParityTest {
     @Test
-    fun `plugin xml declares official go plugin dependency`() {
+    fun `plugin xml declares strict go compatibility dependencies`() {
         val pluginXml = loadResourceText("META-INF/plugin.xml")
 
+        assertContains(pluginXml, "<depends>com.intellij.modules.go-capable</depends>")
         assertContains(pluginXml, "<depends>org.jetbrains.plugins.go</depends>")
+    }
+
+    @Test
+    fun `apply gouse intention does not reference go plugin implementation classes`() {
+        val classBytes = loadResourceBytes("com/looshch/gouse/idea/intentions/ApplyGouseIntention.class")
+        val classText = classBytes.toString(ISO_8859_1)
+
+        assertFalse("com/goide/" in classText)
     }
 
     @Test
@@ -47,5 +58,11 @@ class PluginMetadataParityTest {
         val stream = javaClass.classLoader.getResourceAsStream(path)
         assertNotNull(stream, "Could not load resource: $path")
         return stream.bufferedReader().use { it.readText() }
+    }
+
+    private fun loadResourceBytes(path: String): ByteArray {
+        val stream = javaClass.classLoader.getResourceAsStream(path)
+        assertNotNull(stream, "Could not load resource: $path")
+        return stream.use { it.readBytes() }
     }
 }
